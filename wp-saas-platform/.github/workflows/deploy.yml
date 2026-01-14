@@ -1,0 +1,42 @@
+name: SaaS CI
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build artifacts
+        run: |
+          mkdir artifacts
+          zip -r artifacts/theme.zip theme
+          zip -r artifacts/plugin.zip plugin
+
+      - name: Copy to EC2
+        uses: appleboy/scp-action@v0.1.4
+        with:
+          host: ${{ secrets.EC2_IP }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: "artifacts/*"
+          target: "/home/ubuntu/wp-saas-platform/artifacts"
+
+      - name: Deploy to tenants
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_IP }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            unzip -o /home/ubuntu/wp-saas-platform/artifacts/theme.zip -d /home/ubuntu/wp-saas-platform/tenants/tenant1/wp-content/themes
+            unzip -o /home/ubuntu/wp-saas-platform/artifacts/theme.zip -d /home/ubuntu/wp-saas-platform/tenants/tenant2/wp-content/themes
+
+            unzip -o /home/ubuntu/wp-saas-platform/artifacts/plugin.zip -d /home/ubuntu/wp-saas-platform/tenants/tenant1/wp-content/plugins
+            unzip -o /home/ubuntu/wp-saas-platform/artifacts/plugin.zip -d /home/ubuntu/wp-saas-platform/tenants/tenant2/wp-content/plugins
