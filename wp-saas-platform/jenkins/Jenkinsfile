@@ -1,0 +1,72 @@
+pipeline {
+
+  // Jenkins can run this pipeline on any available agent
+  agent any
+
+  // This creates a version number like v1, v2, v3 based on Jenkins build number
+  environment {
+    VERSION = "v${BUILD_NUMBER}"
+  }
+
+  stages {
+
+    // Step 1: Pull latest code from GitHub
+    stage("Checkout Code") {
+      steps {
+        checkout scm
+      }
+    }
+
+    // Step 2: Check if any PHP file has syntax error
+    // If there is an error, pipeline will stop here
+    stage("PHP Lint") {
+      steps {
+        sh 'find . -name "*.php" -exec php -l {} \\;'
+      }
+    }
+
+    // Step 3: Build ZIP files from theme and plugin folders
+    stage("Build Artifacts") {
+      steps {
+        sh '''
+          # Create a folder to store build outputs
+          mkdir -p artifacts
+
+          # Zip the theme folder
+          zip -r artifacts/theme-${VERSION}.zip theme/
+
+          # Zip the plugin folder
+          zip -r artifacts/plugin-${VERSION}.zip plugin/
+        '''
+      }
+    }
+
+    // Step 4: Store ZIP files inside Jenkins so they can be downloaded or rolled back
+    stage("Archive Artifacts") {
+      steps {
+        archiveArtifacts artifacts: "artifacts/*.zip"
+      }
+    }
+
+    // Step 5: Deploy the ZIP files into all tenants
+    // This simulates pushing company code to every customer
+    stage("Deploy to Tenants") {
+      steps {
+        sh '''
+          # Deploy theme to Tenant 1
+          unzip -o artifacts/theme-${VERSION}.zip -d tenants/tenant1/wp-content/themes
+
+          # Deploy theme to Tenant 2
+          unzip -o artifacts/theme-${VERSION}.zip -d tenants/tenant2/wp-content/themes
+
+          # Deploy plugin to Tenant 1
+          unzip -o artifacts/plugin-${VERSION}.zip -d tenants/tenant1/wp-content/plugins
+
+          # Deploy plugin to Tenant 2
+          unzip -o artifacts/plugin-${VERSION}.zip -d tenants/tenant2/wp-content/plugins
+        '''
+      }
+    }
+
+  }
+}

@@ -1,0 +1,62 @@
+version: "3.8"
+
+services:
+
+  nginx:
+    image: nginx:latest
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx:/etc/nginx/conf.d
+    depends_on:
+      - wp_tenant1
+      - wp_tenant2
+
+  wp_tenant1:
+    image: wordpress:php8.2
+    env_file:
+      - ./secrets/tenant1.env
+    volumes:
+      - ./tenants/tenant1/wp-content:/var/www/html/wp-content
+    depends_on:
+      - db_tenant1
+
+  db_tenant1:
+    image: mysql:8
+    env_file:
+      - ./secrets/tenant1.env
+    volumes:
+      - db_tenant1:/var/lib/mysql
+
+  wp_tenant2:
+    image: wordpress:php8.2
+    env_file:
+      - ./secrets/tenant2.env
+    volumes:
+      - ./tenants/tenant2/wp-content:/var/www/html/wp-content
+    depends_on:
+      - db_tenant2
+
+  db_tenant2:
+    image: mysql:8
+    env_file:
+      - ./secrets/tenant2.env
+    volumes:
+      - db_tenant2:/var/lib/mysql
+
+  # 🔍 Monitoring
+  prometheus:
+    image: prom/prometheus
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+
+  grafana:
+    image: grafana/grafana
+    ports:
+      - "3000:3000"
+
+volumes:
+  db_tenant1:
+  db_tenant2:
