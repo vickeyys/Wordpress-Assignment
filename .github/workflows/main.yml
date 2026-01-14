@@ -1,0 +1,73 @@
+name: SaaS WordPress CI
+
+on:
+  pull_request:
+    branches: [ "main" ]
+
+  push:
+    branches: [ "main" ]
+    tags:
+      - "v*"
+
+jobs:
+
+# ---------------------------
+# PR QUALITY GATE
+# ---------------------------
+  pr-checks:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+
+      - name: PHP Syntax Check
+        run: |
+          find theme plugin -name "*.php" -exec php -l {} \;
+
+      - name: Install WordPress Coding Standards
+        run: |
+          composer global require squizlabs/php_codesniffer
+          composer global require wp-coding-standards/wpcs
+          ~/.composer/vendor/bin/phpcs --config-set installed_paths ~/.composer/vendor/wp-coding-standards/wpcs
+
+      - name: Run WordPress Coding Standards
+        run: |
+          ~/.composer/vendor/bin/phpcs --standard=WordPress theme plugin
+
+      - name: Basic Security Scan
+        run: |
+          ! grep -R "eval(" theme plugin
+          ! grep -R "base64_decode" theme plugin
+
+
+# ---------------------------
+# RELEASE BUILD & DEPLOY
+# ---------------------------
+  release:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Extract version
+        run: |
+          echo "VERSION=${GITHUB_REF##*/}" >> $GITHUB_ENV
+
+      - name: Build versioned artifacts
+        run: |
+          mkdir artifacts
+          zip -r artifacts/theme-${VERSION}.zip theme
+          zip -r artifacts/plugin-${VERSION}.zip plugin
+
+      - name: Upload artifacts to GitHub
+        uses: actions/upload-artifact@v4
+        with:
+          name: wp-artifacts
+          path: artifacts
