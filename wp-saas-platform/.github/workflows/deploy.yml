@@ -26,7 +26,7 @@ jobs:
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
           source: "artifacts/*"
-          target: "/home/ubuntu/wp-saas-platform/artifacts"
+          target: "/home/ubuntu/Wordpress-Assignment/wp-saas-platform/artifacts"
 
       - name: Deploy to tenants
         uses: appleboy/ssh-action@v1.0.3
@@ -35,8 +35,8 @@ jobs:
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            unzip -o /home/ubuntu/wp-saas-platform/artifacts/theme.zip -d /home/ubuntu/wp-saas-platform/tenants/tenant1/wp-content/themes
-            unzip -o /home/ubuntu/wp-saas-platform/artifacts/theme.zip -d /home/ubuntu/wp-saas-platform/tenants/tenant2/wp-content/themes
+            unzip -o /home/ubuntu/Wordpress-Assignment/wp-saas-platform/artifacts/theme.zip -d /home/ubuntu/Wordpress-Assignment/wp-saas-platform/tenants/tenant1/wp-content/themes
+            unzip -o /home/ubuntu/Wordpress-Assignment/wp-saas-platform/artifacts/theme.zip -d /home/ubuntu/Wordpress-Assignment/wp-saas-platform/tenants/tenant2/wp-content/themes
 
-            unzip -o /home/ubuntu/wp-saas-platform/artifacts/plugin.zip -d /home/ubuntu/wp-saas-platform/tenants/tenant1/wp-content/plugins
-            unzip -o /home/ubuntu/wp-saas-platform/artifacts/plugin.zip -d /home/ubuntu/wp-saas-platform/tenants/tenant2/wp-content/plugins
+            unzip -o /home/ubuntu/Wordpress-Assignment/wp-saas-platform/artifacts/plugin.zip -d /home/ubuntu/Wordpress-Assignment/wp-saas-platform/tenants/tenant1/wp-content/plugins
+            unzip -o /home/ubuntu/Wordpress-Assignment/wp-saas-platform/artifacts/plugin.zip -d /home/ubuntu/Wordpress-Assignment/wp-saas-platform/tenants/tenant2/wp-content/plugins
