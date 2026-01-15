@@ -95,6 +95,25 @@ services:
     depends_on:
       - nginx
 
+  mysql-exporter-tenant1:
+    image: prom/mysqld-exporter
+    environment:
+      - DATA_SOURCE_NAME=exporter:exporterpass@(db_tenant1:3306)/
+    ports:
+      - "9104:9104"
+    depends_on:
+      - db_tenant1
+
+  mysql-exporter-tenant2:
+    image: prom/mysqld-exporter
+    environment:
+      - DATA_SOURCE_NAME=exporter:exporterpass@(db_tenant2:3306)/
+    ports:
+      - "9105:9104"
+    depends_on:
+      - db_tenant2
+
+
 volumes:
   db_tenant1:
   db_tenant2:
