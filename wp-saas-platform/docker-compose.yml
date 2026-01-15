@@ -67,11 +67,13 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
 
   nginx-exporter:
-    image: nginxinc/nginx-prometheus-exporter
+    image: bitnami/nginx-exporter
+    environment:
+      - NGINX_HOST=nginx
+      - NGINX_PORT=80
+      - NGINX_STATUS_PATH=/stub_status
     ports:
       - "9113:9113"
-    command:
-      - -nginx.scrape-uri=http://nginx/stub_status
     depends_on:
       - nginx
 
