@@ -85,17 +85,28 @@ services:
 
   mysql-exporter-tenant1:
     image: prom/mysqld-exporter
-    environment:
-      - DATA_SOURCE_NAME=root:${MYSQL_ROOT_PASSWORD}@(db_tenant1:3306)/
+    container_name: mysql-exporter-tenant1
+    volumes:
+      - ./monitoring/mysql/tenant1/.my.cnf:/root/.my.cnf:ro
+    command:
+      - '--config.my-cnf=/root/.my.cnf'
     depends_on:
       - db_tenant1
+    ports:
+      - "9104:9104"
 
   mysql-exporter-tenant2:
     image: prom/mysqld-exporter
-    environment:
-      - DATA_SOURCE_NAME=root:${MYSQL_ROOT_PASSWORD}@(db_tenant2:3306)/
+    container_name: mysql-exporter-tenant2
+    volumes:
+      - ./monitoring/mysql/tenant2/.my.cnf:/root/.my.cnf:ro
+    command:
+      - '--config.my-cnf=/root/.my.cnf'
     depends_on:
       - db_tenant2
+    ports:
+      - "9105:9104"
+
 
 
 
