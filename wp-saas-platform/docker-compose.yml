@@ -67,11 +67,14 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
 
   nginx-exporter:
-    image: nginx/nginx-prometheus-exporter
+    image: nginxinc/nginx-prometheus-exporter
+    ports:
+      - "9113:9113"
     command:
       - -nginx.scrape-uri=http://nginx/stub_status
     depends_on:
       - nginx
+
 
 
 
