@@ -2,10 +2,11 @@ pipeline {
   agent any
 
   environment {
-    THEME_DIR = "theme"
-    PLUGIN_DIR = "plugin"
-    TENANT1 = "tenants/tenant1/wp-content"
-    TENANT2 = "tenants/tenant2/wp-content"
+    BASE_DIR   = "wp-saas-platform"
+    THEME_DIR  = "wp-saas-platform/theme"
+    PLUGIN_DIR = "wp-saas-platform/plugin"
+    TENANT1    = "wp-saas-platform/tenants/tenant1/wp-content"
+    TENANT2    = "wp-saas-platform/tenants/tenant2/wp-content"
   }
 
   stages {
@@ -14,17 +15,16 @@ pipeline {
     // PR checks
     // ============================
     stage('PR Quality Checks') {
-      when {
-        changeRequest()
-      }
+      when { changeRequest() }
+
       steps {
-        echo "Running PR checks..."
+        echo "Running PHP + security checks on PR..."
 
         sh '''
+          php -v
+
           find ${THEME_DIR} ${PLUGIN_DIR} -name "*.php" -exec php -l {} \\;
-        '''
 
-        sh '''
           ! grep -R "eval(" ${THEME_DIR} ${PLUGIN_DIR}
           ! grep -R "base64_decode" ${THEME_DIR} ${PLUGIN_DIR}
         '''
@@ -44,7 +44,11 @@ pipeline {
 
       steps {
         script {
-          def VERSION = env.GIT_TAG_NAME ?: "build-${env.BUILD_NUMBER}"
+          if (env.GIT_TAG_NAME) {
+            env.VERSION = env.GIT_TAG_NAME
+          } else {
+            env.VERSION = "build-${env.BUILD_NUMBER}"
+          }
         }
 
         sh '''
@@ -59,17 +63,15 @@ pipeline {
     // Deploy to tenants
     // ============================
     stage('Deploy to Tenants') {
-      when {
-        branch 'main'
-      }
+      when { branch 'main' }
 
       steps {
         sh '''
-          unzip -o artifacts/theme-*.zip -d ${TENANT1}/themes
-          unzip -o artifacts/theme-*.zip -d ${TENANT2}/themes
+          unzip -o artifacts/theme-${VERSION}.zip -d ${TENANT1}/themes
+          unzip -o artifacts/theme-${VERSION}.zip -d ${TENANT2}/themes
 
-          unzip -o artifacts/plugin-*.zip -d ${TENANT1}/plugins
-          unzip -o artifacts/plugin-*.zip -d ${TENANT2}/plugins
+          unzip -o artifacts/plugin-${VERSION}.zip -d ${TENANT1}/plugins
+          unzip -o artifacts/plugin-${VERSION}.zip -d ${TENANT2}/plugins
         '''
       }
     }
@@ -78,9 +80,7 @@ pipeline {
     // Rollback support
     // ============================
     stage('Archive Artifacts') {
-      when {
-        branch 'main'
-      }
+      when { branch 'main' }
 
       steps {
         archiveArtifacts artifacts: 'artifacts/*.zip', fingerprint: true
