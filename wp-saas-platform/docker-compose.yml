@@ -2,6 +2,9 @@ version: "3.8"
 
 services:
 
+  # ===========================
+  # Reverse Proxy
+  # ===========================
   nginx:
     image: nginx:latest
     ports:
@@ -12,6 +15,9 @@ services:
       - wp_tenant1
       - wp_tenant2
 
+  # ===========================
+  # WordPress Tenant 1
+  # ===========================
   wp_tenant1:
     image: wordpress:php8.2
     env_file:
@@ -28,6 +34,9 @@ services:
     volumes:
       - db_tenant1:/var/lib/mysql
 
+  # ===========================
+  # WordPress Tenant 2
+  # ===========================
   wp_tenant2:
     image: wordpress:php8.2
     env_file:
@@ -44,7 +53,9 @@ services:
     volumes:
       - db_tenant2:/var/lib/mysql
 
-  # 🔍 Monitoring
+  # ===========================
+  # Prometheus
+  # ===========================
   prometheus:
     image: prom/prometheus
     volumes:
@@ -52,11 +63,17 @@ services:
     ports:
       - "9090:9090"
 
+  # ===========================
+  # Grafana
+  # ===========================
   grafana:
     image: grafana/grafana
     ports:
       - "3000:3000"
 
+  # ===========================
+  # Jenkins
+  # ===========================
   jenkins:
     image: jenkins/jenkins:lts
     user: root
@@ -66,6 +83,9 @@ services:
       - jenkins_home:/var/jenkins_home
       - /var/run/docker.sock:/var/run/docker.sock
 
+  # ===========================
+  # NGINX Exporter
+  # ===========================
   nginx-exporter:
     image: bitnami/nginx-exporter
     environment:
@@ -76,9 +96,6 @@ services:
       - "9113:9113"
     depends_on:
       - nginx
-
-
-
 
 volumes:
   db_tenant1:
