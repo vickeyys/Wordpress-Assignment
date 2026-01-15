@@ -19,11 +19,12 @@ scrape_configs:
       - targets: ["nginx-exporter:9113"]
 
   # MySQL tenant 1
+  
   - job_name: "mysql-tenant1"
     static_configs:
       - targets: ["mysql-exporter-tenant1:9104"]
 
-  # MySQL tenant 2
   - job_name: "mysql-tenant2"
     static_configs:
       - targets: ["mysql-exporter-tenant2:9104"]
+
