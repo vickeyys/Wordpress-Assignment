@@ -5,36 +5,36 @@ pipeline {
     BASE_DIR   = "wp-saas-platform"
     THEME_DIR  = "wp-saas-platform/theme"
     PLUGIN_DIR = "wp-saas-platform/plugin"
-    TENANT1    = "wp-saas-platform/tenants/tenant1/wp-content"
-    TENANT2    = "wp-saas-platform/tenants/tenant2/wp-content"
   }
 
   stages {
 
-    // ============================
-    // PR checks
-    // ============================
-    stage('PR Quality Checks') {
+    // =====================================================
+    // 1) PULL REQUEST QUALITY GATE
+    // =====================================================
+    stage('PR – Code Quality Checks') {
       when { changeRequest() }
 
       steps {
-        echo "Running PHP + security checks on PR..."
+        echo "Running WordPress SaaS PR checks..."
 
         sh '''
-          php -v
-
+          echo "PHP syntax validation..."
           find ${THEME_DIR} ${PLUGIN_DIR} -name "*.php" -exec php -l {} \\;
 
+          echo "Basic security scan..."
           ! grep -R "eval(" ${THEME_DIR} ${PLUGIN_DIR}
           ! grep -R "base64_decode" ${THEME_DIR} ${PLUGIN_DIR}
+
+          echo "PR checks passed"
         '''
       }
     }
 
-    // ============================
-    // Build artifacts
-    // ============================
-    stage('Build Versioned Artifacts') {
+    // =====================================================
+    // 2) BUILD VERSIONED ARTIFACTS
+    // =====================================================
+    stage('Build SaaS Release Artifacts') {
       when {
         anyOf {
           branch 'main'
@@ -52,34 +52,40 @@ pipeline {
         }
 
         sh '''
+          echo "Building SaaS release version: ${VERSION}"
           mkdir -p artifacts
+
           zip -r artifacts/theme-${VERSION}.zip ${THEME_DIR}
           zip -r artifacts/plugin-${VERSION}.zip ${PLUGIN_DIR}
         '''
       }
     }
 
-    // ============================
-    // Deploy to tenants
-    // ============================
-    stage('Deploy to Tenants') {
+    // =====================================================
+    // 3) SIMULATED DEPLOYMENT (Assignment requirement)
+    // =====================================================
+    stage('Simulate Deployment to Tenants') {
       when { branch 'main' }
 
       steps {
-        sh '''
-          unzip -o artifacts/theme-${VERSION}.zip -d ${TENANT1}/themes
-          unzip -o artifacts/theme-${VERSION}.zip -d ${TENANT2}/themes
+        echo """
+        Simulated SaaS deployment:
 
-          unzip -o artifacts/plugin-${VERSION}.zip -d ${TENANT1}/plugins
-          unzip -o artifacts/plugin-${VERSION}.zip -d ${TENANT2}/plugins
-        '''
+        - theme-${VERSION}.zip
+        - plugin-${VERSION}.zip
+
+        In production:
+        These artifacts would be copied into:
+        EFS → tenants → wp-content → themes/plugins
+        which are mounted by all tenant WordPress containers.
+        """
       }
     }
 
-    // ============================
-    // Rollback support
-    // ============================
-    stage('Archive Artifacts') {
+    // =====================================================
+    // 4) ROLLBACK SUPPORT
+    // =====================================================
+    stage('Archive Release for Rollback') {
       when { branch 'main' }
 
       steps {
