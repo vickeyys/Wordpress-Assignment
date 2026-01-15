@@ -44,7 +44,7 @@ pipeline {
 
       steps {
         script {
-          VERSION = env.GIT_TAG_NAME ?: "build-${env.BUILD_NUMBER}"
+          def VERSION = env.GIT_TAG_NAME ?: "build-${env.BUILD_NUMBER}"
         }
 
         sh '''
