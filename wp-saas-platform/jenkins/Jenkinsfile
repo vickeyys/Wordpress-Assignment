@@ -1,72 +1,90 @@
 pipeline {
-
-  // Jenkins can run this pipeline on any available agent
   agent any
 
-  // This creates a version number like v1, v2, v3 based on Jenkins build number
   environment {
-    VERSION = "v${BUILD_NUMBER}"
+    THEME_DIR = "theme"
+    PLUGIN_DIR = "plugin"
+    TENANT1 = "tenants/tenant1/wp-content"
+    TENANT2 = "tenants/tenant2/wp-content"
   }
 
   stages {
 
-    // Step 1: Pull latest code from GitHub
-    stage("Checkout Code") {
-      steps {
-        checkout scm
+    // ============================
+    // PR checks
+    // ============================
+    stage('PR Quality Checks') {
+      when {
+        changeRequest()
       }
-    }
-
-    // Step 2: Check if any PHP file has syntax error
-    // If there is an error, pipeline will stop here
-    stage("PHP Lint") {
       steps {
-        sh 'find . -name "*.php" -exec php -l {} \\;'
-      }
-    }
+        echo "Running PR checks..."
 
-    // Step 3: Build ZIP files from theme and plugin folders
-    stage("Build Artifacts") {
-      steps {
         sh '''
-          # Create a folder to store build outputs
+          find ${THEME_DIR} ${PLUGIN_DIR} -name "*.php" -exec php -l {} \\;
+        '''
+
+        sh '''
+          ! grep -R "eval(" ${THEME_DIR} ${PLUGIN_DIR}
+          ! grep -R "base64_decode" ${THEME_DIR} ${PLUGIN_DIR}
+        '''
+      }
+    }
+
+    // ============================
+    // Build artifacts
+    // ============================
+    stage('Build Versioned Artifacts') {
+      when {
+        anyOf {
+          branch 'main'
+          buildingTag()
+        }
+      }
+
+      steps {
+        script {
+          VERSION = env.GIT_TAG_NAME ?: "build-${env.BUILD_NUMBER}"
+        }
+
+        sh '''
           mkdir -p artifacts
-
-          # Zip the theme folder
-          zip -r artifacts/theme-${VERSION}.zip theme/
-
-          # Zip the plugin folder
-          zip -r artifacts/plugin-${VERSION}.zip plugin/
+          zip -r artifacts/theme-${VERSION}.zip ${THEME_DIR}
+          zip -r artifacts/plugin-${VERSION}.zip ${PLUGIN_DIR}
         '''
       }
     }
 
-    // Step 4: Store ZIP files inside Jenkins so they can be downloaded or rolled back
-    stage("Archive Artifacts") {
-      steps {
-        archiveArtifacts artifacts: "artifacts/*.zip"
+    // ============================
+    // Deploy to tenants
+    // ============================
+    stage('Deploy to Tenants') {
+      when {
+        branch 'main'
       }
-    }
 
-    // Step 5: Deploy the ZIP files into all tenants
-    // This simulates pushing company code to every customer
-    stage("Deploy to Tenants") {
       steps {
         sh '''
-          # Deploy theme to Tenant 1
-          unzip -o artifacts/theme-${VERSION}.zip -d tenants/tenant1/wp-content/themes
+          unzip -o artifacts/theme-*.zip -d ${TENANT1}/themes
+          unzip -o artifacts/theme-*.zip -d ${TENANT2}/themes
 
-          # Deploy theme to Tenant 2
-          unzip -o artifacts/theme-${VERSION}.zip -d tenants/tenant2/wp-content/themes
-
-          # Deploy plugin to Tenant 1
-          unzip -o artifacts/plugin-${VERSION}.zip -d tenants/tenant1/wp-content/plugins
-
-          # Deploy plugin to Tenant 2
-          unzip -o artifacts/plugin-${VERSION}.zip -d tenants/tenant2/wp-content/plugins
+          unzip -o artifacts/plugin-*.zip -d ${TENANT1}/plugins
+          unzip -o artifacts/plugin-*.zip -d ${TENANT2}/plugins
         '''
       }
     }
 
+    // ============================
+    // Rollback support
+    // ============================
+    stage('Archive Artifacts') {
+      when {
+        branch 'main'
+      }
+
+      steps {
+        archiveArtifacts artifacts: 'artifacts/*.zip', fingerprint: true
+      }
+    }
   }
 }
