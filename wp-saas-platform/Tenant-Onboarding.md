@@ -85,15 +85,7 @@ WORDPRESS_DB_NAME=acme_db
 WORDPRESS_DB_USER=acme_user
 WORDPRESS_DB_PASSWORD=strong_password_here
 
-# WordPress Security Keys (Generate unique ones)
-WORDPRESS_AUTH_KEY=unique_key_here
-WORDPRESS_SECURE_AUTH_KEY=secure_key_here
-WORDPRESS_LOGGED_IN_KEY=logged_in_key_here
-WORDPRESS_NONCE_KEY=nonce_key_here
-WORDPRESS_AUTH_SALT=auth_salt_here
-WORDPRESS_SECURE_AUTH_SALT=secure_auth_salt_here
-WORDPRESS_LOGGED_IN_SALT=logged_in_salt_here
-WORDPRESS_NONCE_SALT=nonce_salt_here
+
 
 # Optional: Pre-configure admin user
 WORDPRESS_ADMIN_USER=admin
@@ -349,15 +341,6 @@ upstream acme_backend {
 - Bypass NGINX routing rules
 
 ---
-
-## 📈 **Operational Metrics**
-
-| 📊 **Metric** | 🎯 **Target** | ⏱️ **Time** |
-|--------------|--------------|------------|
-| **Onboarding Time** | < 10 minutes | Per tenant |
-| **DNS Propagation** | < 5 minutes | Local testing |
-| **First Access** | < 2 minutes | Container startup |
-| **Isolation** | 100% | Always |
 
 ---
 
