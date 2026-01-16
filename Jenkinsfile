@@ -10,10 +10,25 @@ pipeline {
   stages {
 
     // =====================================================
+    // 0) DEBUG (optional but useful for understanding)
+    // =====================================================
+    stage('Debug Context') {
+      steps {
+        sh '''
+          echo "BRANCH_NAME=${BRANCH_NAME}"
+          echo "CHANGE_ID=${CHANGE_ID}"
+          echo "BUILD_NUMBER=${BUILD_NUMBER}"
+        '''
+      }
+    }
+
+    // =====================================================
     // 1) PULL REQUEST QUALITY GATE
     // =====================================================
     stage('PR – Code Quality Checks') {
-      when { changeRequest() }
+      when {
+        changeRequest()
+      }
 
       steps {
         echo "Running WordPress SaaS PR checks..."
@@ -52,6 +67,9 @@ pipeline {
         }
 
         sh '''
+          echo "Installing zip utility if missing..."
+          apt-get update -qq && apt-get install -y zip
+
           echo "Building SaaS release version: ${VERSION}"
           mkdir -p artifacts
 
@@ -62,10 +80,12 @@ pipeline {
     }
 
     // =====================================================
-    // 3) SIMULATED DEPLOYMENT (Assignment requirement)
+    // 3) SIMULATED DEPLOYMENT (Assignment Requirement)
     // =====================================================
     stage('Simulate Deployment to Tenants') {
-      when { branch 'main' }
+      when {
+        branch 'main'
+      }
 
       steps {
         echo """
@@ -74,10 +94,10 @@ pipeline {
         - theme-${VERSION}.zip
         - plugin-${VERSION}.zip
 
-        In production:
-        These artifacts would be copied into:
-        EFS → tenants → wp-content → themes/plugins
-        which are mounted by all tenant WordPress containers.
+        In real production:
+        Artifacts would be copied to:
+        EFS → tenants → wp-content → themes / plugins
+        shared across all WordPress tenant containers.
         """
       }
     }
@@ -86,11 +106,22 @@ pipeline {
     // 4) ROLLBACK SUPPORT
     // =====================================================
     stage('Archive Release for Rollback') {
-      when { branch 'main' }
+      when {
+        branch 'main'
+      }
 
       steps {
         archiveArtifacts artifacts: 'artifacts/*.zip', fingerprint: true
       }
+    }
+  }
+
+  post {
+    success {
+      echo "Pipeline completed successfully ✅"
+    }
+    failure {
+      echo "Pipeline failed ❌ — check logs"
     }
   }
 }
